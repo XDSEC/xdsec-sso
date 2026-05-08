@@ -14,6 +14,35 @@
 
 系统不允许访客自行注册，只能通过管理员在管理界面导入。
 
+## 数据模型
+
+user
+
+| name               | type    | meaning       |
+|--------------------|---------|---------------|
+| uuid               | varchar | 用户统一编号（uuid4） |
+| username           | string  | 用户名，限制Ascii   |
+| email              | varchar | 邮箱地址          |
+| id                 | string  | ID，可中文，空格     |
+| password           | varchar | bcrypt后的密码    |
+| avatarUrl          | string  | 用户头像链接        |
+| isTotpActivated    | boolean | 是否启用TOTP MFA  |
+| totpSecret         | varchar | TOTP密钥        |
+| isPasskeyActivated | boolean | 是否启用Passkey登录 |
+| passkeySecret      | varchar | Passkey公钥     |
+| isBanned           | boolean | 是否被管理员封禁      |
+| isAdmin            | boolean | 是否为管理员        |
+| isRootAdmin        | boolean | 是否为根管理员       |
+| isEmailLoginUsable | boolean | 邮箱登录是否被禁止     |
+
+recoveryCode
+
+| name          | type      | meaning |
+|---------------|-----------|---------|
+| email         | varchar   | 邮箱      |
+| generatedTime | timestamp | 生成时间    |
+| code          | varchar   | 验证码     |
+
 ## 密码登录
 
 登录：
@@ -34,9 +63,153 @@ set cookie token = jwt_token
 
 ```json
 {
-  "token": "jwt_token",
   "isBanned": false,
-  "isAdmin": false
+  "isAdmin": false,
+  "isPasskeyActivated": false,
+  "isTotpActivated": false,
+  "detail": {
+    "uuid": "n1ks-ank4-...",
+    "username": "xxx",
+    "email": "xxx",
+    "avatarUrl": "xxx"
+  }
+}
+```
+
+当需要进行TOTP验证时返回如下错误信息：
+
+HTTP 500
+
+```json
+{
+  "message": "TOTP needed.",
+  "rawData": {
+    "username": "xiaoming",
+    "email": "1@stu.xidian.edu.cn",
+    "password": "123456"
+  }
+}
+```
+
+此时需要让用户填写六位数字，并回传。
+
+```json
+{
+  "username": "xiaoming",
+  "email": "1@stu.xidian.edu.cn",
+  "password": "123456",
+  "totp": "123456"
+}
+```
+
+后端校验成功后给token，同上。
+
+set cookie token = jwt_token
+
+```json
+{
+  "isBanned": false,
+  "isAdmin": false,
+  "isPasskeyActivated": false,
+  "isTotpActivated": false,
+  "detail": {
+    "uuid": "n1ks-ank4-...",
+    "username": "xxx",
+    "email": "xxx",
+    "avatarUrl": "xxx"
+  }
+}
+```
+
+如果需要使用恢复码，则回传内容改为：
+
+```json
+{
+  "username": "xiaoming",
+  "email": "1@stu.xidian.edu.cn",
+  "password": "123456",
+  "recoveryCode": "dhaikai1n3lcis8a"
+}
+```
+
+常见的错误提示信息：（后端可以弄一个多语言，然后前端可以直接把后端的提示信息显示出来）
+
+|提示信息| 含义                 |
+|---|--------------------|
+|TOTP needed| 需要补充TOTP验证码        |
+|no Ascii| 参数非Ascii字符         |
+|wrong info| 信息错误（用户名、邮箱、密码或验证码 |
+
+## 邮箱验证码登录
+
+POST `/auth/login/emailSend`
+
+```json
+{
+  "email": "1@example.com"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "email sent",
+  "isTotpNeeded": true,
+  "expireTime": "10m"
+}
+```
+
+常见错误信息：
+
+|信息| 含义                 |
+|---|--------------------|
+|Email Not Found| 没有找到邮箱             |
+|Sender Error| 邮箱发送器异常，提示需要使用密码登录 |
+|Method Unusable|用户设置不允许使用邮箱验证码登录|
+
+POST `/auth/login/byEmail`
+
+如果前面有 TOTP needed 则需要发送 TOTP 验证码。
+
+```json
+{
+  "email": "1@example.com",
+  "code": "sk10hq",
+  "totp": "123456"
+}
+```
+
+set cookie token = jwt_token
+
+```json
+{
+  "isBanned": false,
+  "isAdmin": false,
+  "isPasskeyActivated": false,
+  "isTotpActivated": false,
+  "detail": {
+    "uuid": "n1ks-ank4-...",
+    "username": "xxx",
+    "email": "xxx",
+    "avatarUrl": "xxx"
+  }
+}
+```
+
+## PassKey登录与绑定
+
+待补充
+
+## 账户管理（非管理员）
+
+GET `/auth/me`
+
+```json
+{
+  "isBanned": false,
+  "isAdmin": false,
+  ""
 }
 ```
 
