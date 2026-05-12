@@ -42,6 +42,14 @@ recoveryCode
 | generatedTime | timestamp | 生成时间    |
 | code          | varchar   | 验证码     |
 
+emailCode
+
+| name          | type      | meaning |
+|---------------|-----------|---------|
+| email         | varchar   | 邮箱      |
+| code          | int       | 验证码     |
+| generatedTime | timestamp | 生成时间    |
+
 接口返回数据的基本框架
 
 ```json5
@@ -67,6 +75,7 @@ recoveryCode
 | parameter.BeyondAscii | 参数非Ascii字符         |
 | parameter.Wrong       | 信息错误（用户名、邮箱、密码）    |
 | parameter.Invalid     | 信息非法               |
+| parameter.Conflict    | 参数冲突（修改信息时发生重复）    |
 | email.SenderError     | 邮箱发送器异常，提示需要使用密码登录 |
 | speedLimiter.TooFast  | 请求速度过快             |
 | captcha.Missing       | 需要补充Captcha验证码     |
@@ -157,6 +166,70 @@ GET `/auth/me`
       "avatarUrl": "xxx"
     }
   }
+}
+```
+
+修改非敏感的账号信息（除密码、TOTP、Passkey、邮箱外）
+
+PATCH `/auth/me`
+
+Payload:
+
+```json5
+{
+  "id": "xxx", // 改啥传啥
+  "username": "xxx",
+  "avatar": "base64"
+}
+```
+
+Response:
+
+```json5
+{
+  "isSuccess": true,
+  "data": {
+    "isBanned": false,
+    "isAdmin": false,
+    "isPasskeyActivated": false,
+    "isTotpActivated": false,
+    "detail": {
+      "uuid": "n1ks-ank4-...",  // 返回新的用户信息
+      "username": "xxx",
+      "email": "xxx",
+      "avatarUrl": "xxx"
+    }
+  }
+}
+```
+
+敏感信息的修改策略：
+
+| 要修改的信息  | 安全策略                          | 思考                           |
+|---------|-------------------------------|------------------------------|
+| 邮箱      | 修改前邮箱验证码（或TOTP等方式）&&修改后的邮箱验证码 | 要确认修改后的邮箱归属权，否则可以借此得知协会他人的邮箱 |
+| TOTP    | TOTP、邮箱验证码、恢复码、Passkey等任一方式   | 暂无需要考虑的场景                    |
+| Passkey | 同TOTP                         | 同TOTP                        |
+
+## 敏感操作的二次验证
+
+可以使用邮箱验证码、TOTP、Passkey进行验证
+
+此处与登录操作不同，登录不能使用邮箱验证码登录
+
+需要验证的敏感操作有：修改验证信息（密码、TOTP、Passkey、邮箱），注销账号，管理员导入账号
+
+### 发送邮箱验证码
+
+GET `/auth/email/send`
+
+后端从Cookie里面获取当前用户的邮箱，不用也不能手动传邮箱
+
+Response:
+
+```json
+{
+  "isSuccess": true
 }
 ```
 
