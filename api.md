@@ -18,22 +18,21 @@
 
 user
 
-| name               | type    | meaning       |
-|--------------------|---------|---------------|
-| uuid               | varchar | 用户统一编号（uuid4） |
-| username           | string  | 用户名，限制Ascii   |
-| email              | varchar | 邮箱地址          |
-| id                 | string  | ID，可中文，空格     |
-| password           | varchar | bcrypt后的密码    |
-| avatarUrl          | string  | 用户头像链接        |
-| isTotpActivated    | boolean | 是否启用TOTP MFA  |
-| totpSecret         | varchar | TOTP密钥        |
-| isPasskeyActivated | boolean | 是否启用Passkey登录 |
-| passkeySecret      | varchar | Passkey公钥     |
-| isBanned           | boolean | 是否被管理员封禁      |
-| isAdmin            | boolean | 是否为管理员        |
-| isRootAdmin        | boolean | 是否为根管理员       |
-| isEmailLoginUsable | boolean | 邮箱登录是否被禁止     |
+| name               | type    | meaning         |
+|--------------------|---------|-----------------|
+| uuid               | varchar | 用户统一编号（uuid4）   |
+| username           | string  | 用户名，限制Ascii     |
+| email              | varchar | 邮箱地址            |
+| id                 | string  | ID，可中文，空格       |
+| password           | varchar | bcrypt后的密码      |
+| avatarUrl          | string  | 用户头像链接          |
+| isTotpActivated    | boolean | 是否启用TOTP MFA    |
+| totpSecret         | varchar | TOTP密钥          |
+| isPasskeyActivated | boolean | 是否启用Passkey登录   |
+| passkeySecret      | varchar | Passkey公钥       |
+| isBanned           | boolean | 是否被管理员封禁        |
+| isAdmin            | boolean | 是否为管理员          |
+| isRootAdmin        | boolean | 是否为根管理员（本项作用存疑） |
 
 recoveryCode
 
@@ -43,17 +42,72 @@ recoveryCode
 | generatedTime | timestamp | 生成时间    |
 | code          | varchar   | 验证码     |
 
+接口返回数据的基本框架
+
+```json5
+{
+  "isSuccess": true,  // 是否成功
+  "code": "totp.Missing", // 对应的错误码
+  "reason": "服务器炸啦！", // 请求失败的原因，当失败时才返回
+  "data": {
+    "something": "something"  // data 里存返回的信息
+  },
+  "isTotpNeeded": false // 有的接口只返回一个信息，为了简便不用 data 装
+}
+```
+
+接口可能的错误信息对照
+
+前端可以针对 code 做对应的处理
+
+| 提示信息                  | 含义                 |
+|-----------------------|--------------------|
+| totp.Missing          | 需要补充TOTP验证码        |
+| totp.Wrong            | TOTP验证码错误          |
+| parameter.BeyondAscii | 参数非Ascii字符         |
+| parameter.Wrong       | 信息错误（用户名、邮箱、密码）    |
+| parameter.Invalid     | 信息非法               |
+| email.SenderError     | 邮箱发送器异常，提示需要使用密码登录 |
+| speedLimiter.TooFast  | 请求速度过快             |
+| captcha.Missing       | 需要补充Captcha验证码     |
+| server.InternalError  | 服务器内部错误            |
+
 ## 密码登录
 
-登录：
-POST `/auth/login`
+检查是否需要 TOTP 验证
+
+POST `/auth/isTotpNeeded`
 
 Payload：
 ```json
 {
   "username": "xiaoming",
+  "email": "1@example.com"
+}
+```
+
+Response:
+
+```json
+{
+  "isSuccess": true,
+  "isTotpNeeded": true
+}
+```
+
+如果为 True 则需要让用户输入 TOTP 验证码。
+
+登录：
+POST `/auth/login`
+
+Payload：
+```json5
+{
+  "username": "xiaoming",
   "email": "1@stu.xidian.edu.cn",
-  "password": "123456"
+  "password": "123456",
+  "totp": "123456", // 如果前面提示需要 TOTP 则要传此项
+  "recoveryCode": "xxx" // 若使用恢复码则传此项
 }
 ```
 
@@ -63,136 +117,19 @@ set cookie token = jwt_token
 
 ```json
 {
-  "isBanned": false,
-  "isAdmin": false,
-  "isPasskeyActivated": false,
-  "isTotpActivated": false,
-  "detail": {
-    "uuid": "n1ks-ank4-...",
-    "username": "xxx",
-    "email": "xxx",
-    "avatarUrl": "xxx"
-  }
-}
-```
-
-当需要进行TOTP验证时返回如下错误信息：
-
-HTTP 500
-
-```json
-{
-  "message": "TOTP needed.",
-  "rawData": {
-    "username": "xiaoming",
-    "email": "1@stu.xidian.edu.cn",
-    "password": "123456"
-  }
-}
-```
-
-此时需要让用户填写六位数字，并回传。
-
-```json
-{
-  "username": "xiaoming",
-  "email": "1@stu.xidian.edu.cn",
-  "password": "123456",
-  "totp": "123456"
-}
-```
-
-后端校验成功后给token，同上。
-
-set cookie token = jwt_token
-
-```json
-{
-  "isBanned": false,
-  "isAdmin": false,
-  "isPasskeyActivated": false,
-  "isTotpActivated": false,
-  "detail": {
-    "uuid": "n1ks-ank4-...",
-    "username": "xxx",
-    "email": "xxx",
-    "avatarUrl": "xxx"
-  }
-}
-```
-
-如果需要使用恢复码，则回传内容改为：
-
-```json
-{
-  "username": "xiaoming",
-  "email": "1@stu.xidian.edu.cn",
-  "password": "123456",
-  "recoveryCode": "dhaikai1n3lcis8a"
-}
-```
-
-常见的错误提示信息：（后端可以弄一个多语言，然后前端可以直接把后端的提示信息显示出来）
-
-|提示信息| 含义                 |
-|---|--------------------|
-|TOTP needed| 需要补充TOTP验证码        |
-|no Ascii| 参数非Ascii字符         |
-|wrong info| 信息错误（用户名、邮箱、密码或验证码 |
-
-## 邮箱验证码登录
-
-POST `/auth/login/emailSend`
-
-```json
-{
-  "email": "1@example.com"
-}
-```
-
-Response:
-
-```json
-{
-  "message": "email sent",
-  "isTotpNeeded": true,
-  "expireTime": "10m"
-}
-```
-
-常见错误信息：
-
-|信息| 含义                 |
-|---|--------------------|
-|Email Not Found| 没有找到邮箱             |
-|Sender Error| 邮箱发送器异常，提示需要使用密码登录 |
-|Method Unusable|用户设置不允许使用邮箱验证码登录|
-
-POST `/auth/login/byEmail`
-
-如果前面有 TOTP needed 则需要发送 TOTP 验证码。
-
-```json
-{
-  "email": "1@example.com",
-  "code": "sk10hq",
-  "totp": "123456"
-}
-```
-
-set cookie token = jwt_token
-
-```json
-{
-  "isBanned": false,
-  "isAdmin": false,
-  "isPasskeyActivated": false,
-  "isTotpActivated": false,
-  "detail": {
-    "uuid": "n1ks-ank4-...",
-    "username": "xxx",
-    "email": "xxx",
-    "avatarUrl": "xxx"
+  "isSuccess": true,
+  "data": {
+    "isBanned": false,
+    "isAdmin": false,
+    "isPasskeyActivated": false,
+    "isTotpActivated": false,
+    "detail": {
+      "uuid": "n1ks-ank4-...",
+      "id": "xxx",
+      "username": "xxx",
+      "email": "xxx",
+      "avatarUrl": "xxx"
+    }
   }
 }
 ```
@@ -207,9 +144,19 @@ GET `/auth/me`
 
 ```json
 {
-  "isBanned": false,
-  "isAdmin": false,
-  ""
+  "isSuccess": true,
+  "data": {
+    "isBanned": false,
+    "isAdmin": false,
+    "isPasskeyActivated": false,
+    "isTotpActivated": false,
+    "detail": {
+      "uuid": "n1ks-ank4-...",
+      "username": "xxx",
+      "email": "xxx",
+      "avatarUrl": "xxx"
+    }
+  }
 }
 ```
 
