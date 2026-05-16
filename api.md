@@ -32,7 +32,6 @@ user
 | passkeySecret      | varchar | Passkey公钥       |
 | isBanned           | boolean | 是否被管理员封禁        |
 | isAdmin            | boolean | 是否为管理员          |
-| isRootAdmin        | boolean | 是否为根管理员（本项作用存疑） |
 
 recoveryCode
 
@@ -50,6 +49,29 @@ emailCode
 | code          | int       | 验证码     |
 | generatedTime | timestamp | 生成时间    |
 
+jwt
+
+方便管理jwt token的远程注销
+
+| name           | type      | meaning   |
+|----------------|-----------|-----------|
+| username       | varchar   | jwt对应的用户名 |
+| jwt            | varchar   | jwt内容     |
+| issueTime      | timestamp | jwt签发时间   |
+| expirationTime | timestamp | jwt到期时间   |
+| isRevoked      | boolean   | 是否被吊销     |
+
+log
+
+日志，方便管理员审计
+
+| name          | type      | meaning           |
+|---------------|-----------|-------------------|
+| operator      | varchar   | 操作者的username      |
+| action        | string    | 操作内容              |
+| operationTime | timestamp | 操作时间              |
+| receiver      | varchar   | 操作对象的username（如有） |
+
 接口返回数据的基本框架
 
 ```json5
@@ -61,6 +83,21 @@ emailCode
     "something": "something"  // data 里存返回的信息
   },
   "isTotpNeeded": false // 有的接口只返回一个信息，为了简便不用 data 装
+}
+```
+
+jwt payload
+
+```json5
+{
+  "username": "xiaoming",
+  "id": "小明",
+  "email": "1@example.com",
+  "issueTime": "timestamp",
+  "isTotpActivated": true,
+  "isTotpAuthenticated": false,
+  "isPasskeyActivated": true,
+  "isAdmin": false
 }
 ```
 
@@ -81,30 +118,9 @@ emailCode
 | captcha.Missing       | 需要补充Captcha验证码     |
 | server.InternalError  | 服务器内部错误            |
 
-## 密码登录
+## 登录
 
-检查是否需要 TOTP 验证
-
-POST `/auth/isTotpNeeded`
-
-Payload：
-```json
-{
-  "username": "xiaoming",
-  "email": "1@example.com"
-}
-```
-
-Response:
-
-```json
-{
-  "isSuccess": true,
-  "isTotpNeeded": true
-}
-```
-
-如果为 True 则需要让用户输入 TOTP 验证码。
+### 密码登录
 
 登录：
 POST `/auth/login`
@@ -114,9 +130,7 @@ Payload：
 {
   "username": "xiaoming",
   "email": "1@stu.xidian.edu.cn",
-  "password": "123456",
-  "totp": "123456", // 如果前面提示需要 TOTP 则要传此项
-  "recoveryCode": "xxx" // 若使用恢复码则传此项
+  "password": "123456"
 }
 ```
 
@@ -140,6 +154,27 @@ set cookie token = jwt_token
       "avatarUrl": "xxx"
     }
   }
+}
+```
+
+### 忘记 / 重置密码
+
+POST `/auth/missPassword`
+
+Payload:
+
+```json5
+{
+  "email": "1@example.com",
+  "username": "xiaoming"
+}
+```
+
+Response:
+
+```json5
+{
+  "isSuccess"
 }
 ```
 
@@ -230,6 +265,79 @@ Response:
 ```json
 {
   "isSuccess": true
+}
+```
+
+## 管理员管理用户
+
+### 新增用户
+
+POST `/admin/user/add`
+
+```json5
+{
+  "username": "xiaoming",
+  "email": "1@example.com",
+  "id": "小明", // ID，可中文，可留空
+  "isAdmin": false  // 新添加的用户是否为管理员
+}
+```
+
+本接口不设置新用户的密码，密码由用户通过重置密码设置。
+
+Response:
+
+```json5
+{
+  "isSuccess": true,
+  "username": "xiaoming",
+  "uuid": "xxx",
+  "id": "小明",
+  "email": "1@example.com"
+}
+```
+
+### 批量导入用户
+
+POST `/admin/user/import`
+
+### 封禁 / 解禁用户
+
+POST `/admin/user/suspend` 封禁用户
+
+POST `/admin/user/unsuspend` 解封用户
+
+```json5
+{
+  "username": "xiaoming",
+  "reason": "quit xdsec", // 解封的时候可以不填写本项内容
+  "email": "1@example.com",
+  "uuid": "xxx"
+}
+```
+原先两个接口共用uri，但需要考虑防重放的问题，必须要在payload里面加一个action（suspend或unsuspend），这个设计在名字为`suspend`的接口下显得比较奇怪，所以拆成两个uri。
+
+### 用户列表
+
+GET `/admin/user/list`
+
+```json5
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "isBanned": false,
+      "isAdmin": false,
+      "isPasskeyActivated": false,
+      "isTotpActivated": false,
+      "detail": {
+        "uuid": "n1ks-ank4-...",
+        "username": "xxx",
+        "email": "xxx",
+        "avatarUrl": "xxx"
+      }
+    },
+  ]
 }
 ```
 
