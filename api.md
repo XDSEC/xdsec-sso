@@ -49,18 +49,6 @@ emailCode
 | code          | int       | 验证码     |
 | generatedTime | timestamp | 生成时间    |
 
-jwt
-
-方便管理jwt token的远程注销
-
-| name           | type      | meaning   |
-|----------------|-----------|-----------|
-| username       | varchar   | jwt对应的用户名 |
-| jwt            | varchar   | jwt内容     |
-| issueTime      | timestamp | jwt签发时间   |
-| expirationTime | timestamp | jwt到期时间   |
-| isRevoked      | boolean   | 是否被吊销     |
-
 log
 
 日志，方便管理员审计
