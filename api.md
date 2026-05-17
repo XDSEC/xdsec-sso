@@ -92,6 +92,7 @@ jwt payload
 {
   "username": "xiaoming",
   "id": "小明",
+  "uuid": "xxxx-xxxx-",
   "email": "1@example.com",
   "issueTime": "timestamp",
   "isTotpActivated": true,
@@ -136,26 +137,33 @@ Payload：
 
 Respond:
 
-set cookie token = jwt_token
-
-```json
+```json5
 {
   "isSuccess": true,
-  "data": {
-    "isBanned": false,
-    "isAdmin": false,
-    "isPasskeyActivated": false,
-    "isTotpActivated": false,
-    "detail": {
-      "uuid": "n1ks-ank4-...",
-      "id": "xxx",
-      "username": "xxx",
-      "email": "xxx",
-      "avatarUrl": "xxx"
-    }
-  }
+  "token": "xxx" // 前端可以通过解码jwt获得用户信息，把jwt存本地存储（不存cookie），后面鉴权的时候带上
 }
 ```
+
+解码jwt后如果发现`isTotpActivated`为true，而`isTotpAuthenticated`为false，则需要进一步进行totp验证，通过下面这个接口换取`isTotpAuthenticated`为true的jwt。
+
+POST `/auth/login/totp`
+
+Payload：
+```json5
+{
+  "totp": "123456"  // TOTP验证码
+}
+```
+
+Response：
+```json5
+{
+  "isSuccess": true,
+  "token": "xxx"  // 新签发的jwt
+}
+```
+
+jwt token后续请求接口的时候放在Authorization Header。
 
 ### 忘记 / 重置密码
 
@@ -165,8 +173,7 @@ Payload:
 
 ```json5
 {
-  "email": "1@example.com",
-  "username": "xiaoming"
+  "email": "1@example.com"
 }
 ```
 
@@ -174,9 +181,13 @@ Response:
 
 ```json5
 {
-  "isSuccess"
+  "isSuccess": true // 无论邮箱是否存在都返回true
 }
 ```
+
+后端会将包含链接的邮件发送到对应的邮箱，用户登录邮箱点击链接进行后续的流程。
+
+链接的结构、流程等前端设计好url结构再议。
 
 ## PassKey登录与绑定
 
@@ -184,25 +195,7 @@ Response:
 
 ## 账户管理（非管理员）
 
-GET `/auth/me`
-
-```json
-{
-  "isSuccess": true,
-  "data": {
-    "isBanned": false,
-    "isAdmin": false,
-    "isPasskeyActivated": false,
-    "isTotpActivated": false,
-    "detail": {
-      "uuid": "n1ks-ank4-...",
-      "username": "xxx",
-      "email": "xxx",
-      "avatarUrl": "xxx"
-    }
-  }
-}
-```
+读本地存储的jwt获取用户信息。
 
 修改非敏感的账号信息（除密码、TOTP、Passkey、邮箱外）
 
@@ -223,18 +216,7 @@ Response:
 ```json5
 {
   "isSuccess": true,
-  "data": {
-    "isBanned": false,
-    "isAdmin": false,
-    "isPasskeyActivated": false,
-    "isTotpActivated": false,
-    "detail": {
-      "uuid": "n1ks-ank4-...",  // 返回新的用户信息
-      "username": "xxx",
-      "email": "xxx",
-      "avatarUrl": "xxx"
-    }
-  }
+  "token": "xxx"  // 新的jwt
 }
 ```
 
@@ -257,8 +239,6 @@ Response:
 ### 发送邮箱验证码
 
 GET `/auth/email/send`
-
-后端从Cookie里面获取当前用户的邮箱，不用也不能手动传邮箱
 
 Response:
 
@@ -289,11 +269,7 @@ Response:
 
 ```json5
 {
-  "isSuccess": true,
-  "username": "xiaoming",
-  "uuid": "xxx",
-  "id": "小明",
-  "email": "1@example.com"
+  "isSuccess": true
 }
 ```
 
@@ -309,9 +285,7 @@ POST `/admin/user/unsuspend` 解封用户
 
 ```json5
 {
-  "username": "xiaoming",
   "reason": "quit xdsec", // 解封的时候可以不填写本项内容
-  "email": "1@example.com",
   "uuid": "xxx"
 }
 ```
