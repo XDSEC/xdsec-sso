@@ -14,13 +14,108 @@
 
 系统不允许访客自行注册，只能通过管理员在管理界面导入。
 
-## 密码登录
+## 数据模型
+
+user
+
+| name               | type    | meaning         |
+|--------------------|---------|-----------------|
+| uuid               | varchar | 用户统一编号（uuid4）   |
+| username           | string  | 用户名，限制Ascii     |
+| email              | varchar | 邮箱地址            |
+| id                 | string  | ID，可中文，空格       |
+| password           | varchar | bcrypt后的密码      |
+| avatarUrl          | string  | 用户头像链接          |
+| isTotpActivated    | boolean | 是否启用TOTP MFA    |
+| totpSecret         | varchar | TOTP密钥          |
+| isPasskeyActivated | boolean | 是否启用Passkey登录   |
+| passkeySecret      | varchar | Passkey公钥       |
+| isBanned           | boolean | 是否被管理员封禁        |
+| isAdmin            | boolean | 是否为管理员          |
+
+recoveryCode
+
+| name          | type      | meaning |
+|---------------|-----------|---------|
+| email         | varchar   | 邮箱      |
+| generatedTime | timestamp | 生成时间    |
+| code          | varchar   | 验证码     |
+
+emailCode
+
+| name          | type      | meaning |
+|---------------|-----------|---------|
+| email         | varchar   | 邮箱      |
+| code          | int       | 验证码     |
+| generatedTime | timestamp | 生成时间    |
+
+log
+
+日志，方便管理员审计
+
+| name          | type      | meaning           |
+|---------------|-----------|-------------------|
+| operator      | varchar   | 操作者的username      |
+| action        | string    | 操作内容              |
+| operationTime | timestamp | 操作时间              |
+| receiver      | varchar   | 操作对象的username（如有） |
+
+接口返回数据的基本框架
+
+```json5
+{
+  "isSuccess": true,  // 是否成功
+  "code": "totp.Missing", // 对应的错误码
+  "reason": "服务器炸啦！", // 请求失败的原因，当失败时才返回
+  "data": {
+    "something": "something"  // data 里存返回的信息
+  },
+  "isTotpNeeded": false // 有的接口只返回一个信息，为了简便不用 data 装
+}
+```
+
+jwt payload
+
+```json5
+{
+  "username": "xiaoming",
+  "id": "小明",
+  "uuid": "xxxx-xxxx-",
+  "email": "1@example.com",
+  "issueTime": "timestamp",
+  "isTotpActivated": true,
+  "isTotpAuthenticated": false,
+  "isPasskeyActivated": true,
+  "isAdmin": false
+}
+```
+
+接口可能的错误信息对照
+
+前端可以针对 code 做对应的处理
+
+| 提示信息                  | 含义                 |
+|-----------------------|--------------------|
+| totp.Missing          | 需要补充TOTP验证码        |
+| totp.Wrong            | TOTP验证码错误          |
+| parameter.BeyondAscii | 参数非Ascii字符         |
+| parameter.Wrong       | 信息错误（用户名、邮箱、密码）    |
+| parameter.Invalid     | 信息非法               |
+| parameter.Conflict    | 参数冲突（修改信息时发生重复）    |
+| email.SenderError     | 邮箱发送器异常，提示需要使用密码登录 |
+| speedLimiter.TooFast  | 请求速度过快             |
+| captcha.Missing       | 需要补充Captcha验证码     |
+| server.InternalError  | 服务器内部错误            |
+
+## 登录
+
+### 密码登录
 
 登录：
 POST `/auth/login`
 
 Payload：
-```json
+```json5
 {
   "username": "xiaoming",
   "email": "1@stu.xidian.edu.cn",
@@ -30,13 +125,181 @@ Payload：
 
 Respond:
 
-set cookie token = jwt_token
+```json5
+{
+  "isSuccess": true,
+  "token": "xxx" // 前端可以通过解码jwt获得用户信息，把jwt存本地存储（不存cookie），后面鉴权的时候带上
+}
+```
+
+解码jwt后如果发现`isTotpActivated`为true，而`isTotpAuthenticated`为false，则需要进一步进行totp验证，通过下面这个接口换取`isTotpAuthenticated`为true的jwt。
+
+POST `/auth/login/totp`
+
+Payload：
+```json5
+{
+  "totp": "123456"  // TOTP验证码
+}
+```
+
+Response：
+```json5
+{
+  "isSuccess": true,
+  "token": "xxx"  // 新签发的jwt
+}
+```
+
+jwt token后续请求接口的时候放在Authorization Header。
+
+### 忘记 / 重置密码
+
+POST `/auth/missPassword`
+
+Payload:
+
+```json5
+{
+  "email": "1@example.com"
+}
+```
+
+Response:
+
+```json5
+{
+  "isSuccess": true // 无论邮箱是否存在都返回true
+}
+```
+
+后端会将包含链接的邮件发送到对应的邮箱，用户登录邮箱点击链接进行后续的流程。
+
+链接的结构、流程等前端设计好url结构再议。
+
+## PassKey登录与绑定
+
+待补充
+
+## 账户管理（非管理员）
+
+读本地存储的jwt获取用户信息。
+
+修改非敏感的账号信息（除密码、TOTP、Passkey、邮箱外）
+
+PATCH `/auth/me`
+
+Payload:
+
+```json5
+{
+  "id": "xxx", // 改啥传啥
+  "username": "xxx",
+  "avatar": "base64"
+}
+```
+
+Response:
+
+```json5
+{
+  "isSuccess": true,
+  "token": "xxx"  // 新的jwt
+}
+```
+
+敏感信息的修改策略：
+
+| 要修改的信息  | 安全策略                          | 思考                           |
+|---------|-------------------------------|------------------------------|
+| 邮箱      | 修改前邮箱验证码（或TOTP等方式）&&修改后的邮箱验证码 | 要确认修改后的邮箱归属权，否则可以借此得知协会他人的邮箱 |
+| TOTP    | TOTP、邮箱验证码、恢复码、Passkey等任一方式   | 暂无需要考虑的场景                    |
+| Passkey | 同TOTP                         | 同TOTP                        |
+
+## 敏感操作的二次验证
+
+可以使用邮箱验证码、TOTP、Passkey进行验证
+
+此处与登录操作不同，登录不能使用邮箱验证码登录
+
+需要验证的敏感操作有：修改验证信息（密码、TOTP、Passkey、邮箱），注销账号，管理员导入账号
+
+### 发送邮箱验证码
+
+GET `/auth/email/send`
+
+Response:
 
 ```json
 {
-  "token": "jwt_token",
-  "isBanned": false,
-  "isAdmin": false
+  "isSuccess": true
+}
+```
+
+## 管理员管理用户
+
+### 新增用户
+
+POST `/admin/user/add`
+
+```json5
+{
+  "username": "xiaoming",
+  "email": "1@example.com",
+  "id": "小明", // ID，可中文，可留空
+  "isAdmin": false  // 新添加的用户是否为管理员
+}
+```
+
+本接口不设置新用户的密码，密码由用户通过重置密码设置。
+
+Response:
+
+```json5
+{
+  "isSuccess": true
+}
+```
+
+### 批量导入用户
+
+POST `/admin/user/import`
+
+### 封禁 / 解禁用户
+
+POST `/admin/user/suspend` 封禁用户
+
+POST `/admin/user/unsuspend` 解封用户
+
+```json5
+{
+  "reason": "quit xdsec", // 解封的时候可以不填写本项内容
+  "uuid": "xxx"
+}
+```
+原先两个接口共用uri，但需要考虑防重放的问题，必须要在payload里面加一个action（suspend或unsuspend），这个设计在名字为`suspend`的接口下显得比较奇怪，所以拆成两个uri。
+
+### 用户列表
+
+GET `/admin/user/list`
+
+```json5
+{
+  "isSuccess": true,
+  "data": [
+    {
+      "isBanned": false,
+      "isAdmin": false,
+      "isPasskeyActivated": false,
+      "isTotpActivated": false,
+      "detail": {
+        "uuid": "n1ks-ank4-...",
+        "username": "xxx",
+        "email": "xxx",
+        "avatarUrl": "xxx"
+      }
+    },
+  ]
 }
 ```
 
