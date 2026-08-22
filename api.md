@@ -106,6 +106,7 @@ jwt payload
 | speedLimiter.TooFast  | 请求速度过快             |
 | captcha.Missing       | 需要补充Captcha验证码     |
 | server.InternalError  | 服务器内部错误            |
+| auth.banned           | 用户被管理员禁止登录         |
 
 ## 登录
 
