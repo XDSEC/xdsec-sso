@@ -1,24 +1,19 @@
 <div align="center">
     <a href="https://xdsec.org">
-        <img src="./arts/logo.png" style="width: 100%" alt="XDSEC" />
+        <img src="./arts/logo.png" style="width: 75%" alt="XDSEC" />
     </a>
     <p><em>XDSEC 单点登录系统</em></p>
 </div>
 
 ## 项目结构
 
-```mermaid
----
-config:
-    treeView:
-        showIcons: true
----
-treeView-beta
+```
+xdsec-sso
     arts/
-    crates/ ## 后端
-    deploy/ ## 部署
-    web/    ## 前端
-    api.md  ## API 文档
+    crates/          # 后端
+    deploy/          # 部署
+    web/             # 前端
+    api.md           # API 文档
     Cargo.toml
     CONTRIBUTING.md
     LICENSE
