@@ -1,0 +1,10 @@
+edition                     = "2024"
+fn_single_line              = true
+hex_literal_case            = "Upper"
+float_literal_trailing_zero = "Never"
+match_block_trailing_comma  = true
+newline_style               = "Unix"
+reorder_impl_items          = true
+group_imports               = "StdExternalCrate"
+use_field_init_shorthand    = true
+tab_spaces                  = 4
