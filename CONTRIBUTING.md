@@ -46,6 +46,8 @@
 
 当你需要格式化代码时，使用 `cargo fmt`。
 
+请使用中文注释，遵守 [rustdoc 规范](https://rustwiki.org/zh-CN/rustdoc/how-to-write-documentation.html)。
+
 ## 前端开发
 
 空空如也......

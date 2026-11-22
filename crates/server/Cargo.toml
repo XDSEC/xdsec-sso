@@ -1,0 +1,16 @@
+[package]
+name                   = "xdsec-sso-server"
+edition.workspace      = true
+homepage.workspace     = true
+publish.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+version.workspace      = true
+license.workspace      = true
+
+[dependencies]
+clap  = { workspace = true }
+time  = { workspace = true }
+tokio = { workspace = true }
+
+sso-config = { workspace = true }
