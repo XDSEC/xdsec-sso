@@ -44,7 +44,7 @@
 
 对于 Rust 代码，请遵循 [rustfmt.toml](./rustfmt.toml) 中的规定。
 
-当你需要格式化代码时，使用 `cargo fmt`。
+当你需要格式化代码时，使用 `cargo +nightly fmt`。
 
 请使用中文注释，遵守 [rustdoc 规范](https://rustwiki.org/zh-CN/rustdoc/how-to-write-documentation.html)。
 

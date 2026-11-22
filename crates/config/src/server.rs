@@ -1,7 +1,7 @@
 //! 服务端配置
 use std::time::Duration;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RateLimit {
@@ -35,13 +35,17 @@ pub struct Config {
 impl Default for RateLimit {
     /// 默认不限速（不建议）
     fn default() -> Self {
-        RateLimit { burst_limit: u32::MAX, burst_recover_time: Duration::default() }
+        RateLimit {
+            burst_limit: u32::MAX,
+            burst_recover_time: Duration::default(),
+        }
     }
 }
 
 mod millis_format {
     use std::time::Duration;
-    use serde::{Serializer, Deserializer, Deserialize};
+
+    use serde::{Deserialize, Deserializer, Serializer};
     pub fn serialize<S: Serializer>(d: &Duration, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_u64(d.as_millis() as u64)
     }
@@ -61,6 +65,12 @@ mod tests {
             burst_limit = 0xDEADBEEF
             burst_recover_time = 709
         "#;
-        assert_eq!(RateLimit { burst_limit: 0xDEADBEEF, burst_recover_time: Duration::from_secs_f64(0.709) }, toml::from_str(raw).unwrap());
+        assert_eq!(
+            RateLimit {
+                burst_limit: 0xDEADBEEF,
+                burst_recover_time: Duration::from_secs_f64(0.709)
+            },
+            toml::from_str(raw).unwrap()
+        );
     }
 }
