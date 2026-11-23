@@ -22,22 +22,43 @@ xdsec-sso
 
 ## 技术栈
 
-- **后端：** Rust
-    - **运行时：** tokio
-    - **HTTP服务：** axum
-    - **中间件：** tower
-    - **数据库操作：** sea-orm
-- **前端：** *待定*
+### 后端
+
+|项目|解决方案|
+|-|-|
+|语言|[Rust](https://rust-lang.org/zh-CN/)|
+|核心框架|[tokio](https://tokio.rs/) + [axum](https://axumrust.com/) + [sea-orm](https://www.sea-ql.org/SeaORM/) + [tracing](https://tracing.rs/)|
+|关系型数据库|[PostgreSQL](https://www.postgresql.org/)|
+|缓存数据库|[Redis](https://redis.io/)|
+|虚拟化|[Docker](https://www.docker.com/)|
+
+### 前端
+
+暂无......
 
 ## 架构图
 
 ```mermaid
-
+architecture-beta
+    group host(server)[Host]
+    group docker[Docker] in host
+    service ssd(disk)[Storage] in host
+    service postgres(database)[PostgreSQL] in docker
+    service redis(database)[Redis] in docker
+    service sso(server)[SSO Server] in host
+    service journald(server)[journald] in host
+    service nginx(server)[nginx] in host
+    service web(internet)[frontend] in host
+    service website(cloud)[website]
+    
+    ssd:L -- R:postgres
+    sso:B --> T:journald
+    postgres:L -- R:sso
+    redis:L -- R:sso
+    sso:T <-- B:nginx
+    web:T <-- B:nginx
+    website:R -- L:nginx
+    align column postgres redis
+    align row web sso postgres ssd
+    align column sso journald
 ```
-
-## TODO
-
-- [ ] HTTP 服务器框架
-- [ ] 数据模型及数据库连接
-- [ ] API 实现
-- [ ] 登录相关

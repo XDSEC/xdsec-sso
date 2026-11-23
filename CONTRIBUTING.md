@@ -36,17 +36,32 @@
 
 ## 部署测试
 
-请参阅 [deploy/README.md](./deploy/README.md)。
+请参阅 [deploy 目录](/deploy/)。
 
 ## 后端开发
 
 ### 代码风格
 
-对于 Rust 代码，请遵循 [rustfmt.toml](./rustfmt.toml) 中的规定。
+对于 Rust 代码，请遵循 [rustfmt.toml](/rustfmt.toml) 中的规定。
 
 当你需要格式化代码时，使用 `cargo +nightly fmt`。
 
-请使用中文注释，遵守 [rustdoc 规范](https://rustwiki.org/zh-CN/rustdoc/how-to-write-documentation.html)。
+建议为每个函数/类型等添加注释。请使用中文注释，遵守 [rustdoc 规范](https://rustwiki.org/zh-CN/rustdoc/how-to-write-documentation.html)。
+
+关键逻辑**必须**写单元测试，可以参考如下模板：
+
+```rust
+#[cfg(test)]
+mod tests {
+    /// 对 xxx 的单元测试
+    /// 验证了 ......
+    /// （注释内容不作格式要求）
+    #[test]
+    fn xxx() {
+        /* ... */
+    }
+}
+```
 
 ## 前端开发
 
