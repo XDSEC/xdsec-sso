@@ -1,4 +1,5 @@
 //! 服务端配置
+
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -42,13 +43,16 @@ impl Default for RateLimit {
     }
 }
 
+/// 将 u64 转换为 Duration 类型
 mod millis_format {
     use std::time::Duration;
 
     use serde::{Deserialize, Deserializer, Serializer};
+
     pub fn serialize<S: Serializer>(d: &Duration, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_u64(d.as_millis() as u64)
     }
+
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Duration, D::Error> {
         let dur = u64::deserialize(d)?;
         Ok(Duration::from_millis(dur))
@@ -59,8 +63,9 @@ mod millis_format {
 mod tests {
     use super::*;
 
+    /// 测试手动实现的反序列化正确性
     #[test]
-    fn duration_serde() {
+    fn duration_de() {
         let raw = r#"
             burst_limit = 0xDEADBEEF
             burst_recover_time = 709

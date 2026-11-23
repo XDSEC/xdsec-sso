@@ -14,6 +14,7 @@
 
 use serde::{Deserialize, Serialize};
 
+pub mod database;
 pub mod server;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,0 +1,19 @@
+services:
+  sso-db:
+    image: postgres:alpine
+    ports:
+      - 7091:5432
+    volumes:
+      - xdsec-sso-db:/data
+    restart: always
+    environment:
+      POSTGRES_USER: xdsec-sso
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      PGDATA: /data
+  sso-redis:
+    image: redis:alpine
+    ports:
+      - 7092:6379
+    restart: always
+volumes:
+  xdsec-sso-db:

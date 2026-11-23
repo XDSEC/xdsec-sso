@@ -23,8 +23,8 @@ user
 | uuid               | varchar | 用户统一编号（uuid4）   |
 | username           | string  | 用户名，限制Ascii     |
 | email              | varchar | 邮箱地址            |
-| id                 | string  | ID，可中文，空格       |
-| password           | varchar | bcrypt后的密码      |
+| ~~id~~ nickname    | string  | ID，可中文，空格       |
+| password           | varchar | ~~bcrypt~~ argon2后的密码      |
 | avatarUrl          | string  | 用户头像链接          |
 | isTotpActivated    | boolean | 是否启用TOTP MFA    |
 | totpSecret         | varchar | TOTP密钥          |
@@ -106,6 +106,36 @@ jwt payload
 | speedLimiter.TooFast  | 请求速度过快             |
 | captcha.Missing       | 需要补充Captcha验证码     |
 | server.InternalError  | 服务器内部错误            |
+
+## 实体模型 (数据库细节)
+
+> [!NOTE]
+> 未标注 `nullable` 的字段均使用 `NOT NULL` 修饰
+
+### users
+
+| name | type | meaning |
+|-|-|-|
+|uid|uuid primary key|用户统一编号|
+|username|varchar(63)|用户名|
+|email|varchar(127)|邮箱|
+|nickname|varchar(63)|昵称|
+|password|text|密码（argon2）|
+|totpSecret|char(31) nullable|是否启用 TOTP / TOTP 密钥|
+|banned|boolean|是否被ban|
+|admin|boolean|是否为管理员|
+
+### user_passkeys
+
+| name | type | meaning |
+|-|-|-|
+|id|serial primary key|记录序号|
+|uid|uuid foreign key => users (uid) |用户统一编号|
+|passkeySecret|text|passkey 密钥|
+
+### 建表指令
+
+参考 [deploy/init.sql](/deploy/init.sql)
 
 ## 登录
 

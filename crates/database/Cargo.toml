@@ -11,3 +11,5 @@ license.workspace      = true
 [dependencies]
 sea-orm = { workspace = true }
 tokio   = { workspace = true }
+
+sso-config = { workspace = true }
