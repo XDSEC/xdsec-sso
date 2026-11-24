@@ -28,7 +28,7 @@ impl RateLimit {
         if now + self.tolerance < self.tat {
             false
         } else {
-            self.tat = now.max(self.tat) + self.tolerance;
+            self.tat = now.max(self.tat) + self.recover_time;
             true
         }
     }

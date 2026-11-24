@@ -7,7 +7,7 @@ CREATE TABLE "users" (
     "totpSecret" CHAR(31) NULL,
     "banned" BOOLEAN DEFAULT false,
     "admin" BOOLEAN DEFAULT false,
-    PRIMARY KEY ("uuid")
+    PRIMARY KEY ("uid")
 );
 
 CREATE TABLE "user_passkeys" (
@@ -15,7 +15,7 @@ CREATE TABLE "user_passkeys" (
     "uid" UUID NOT NULL,
     "passkeySecret" TEXT NOT NULL,
     PRIMARY KEY ("id"),
-    FOREIGN KEY ("uuid") REFERENCES "users" ("uuid")
+    FOREIGN KEY ("uid") REFERENCES "users" ("uid")
     ON DELETE CASCADE
     ON UPDATE CASCADE
 );
