@@ -16,9 +16,11 @@ pub struct RateLimit {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct RateLimitConfig {
     /// 快速 API 的限速
+    #[serde(default)]
     query_limit: RateLimit,
     /// 耗时 API 的限速
-    calc_limit: RateLimit,
+    #[serde(default)]
+    blocking_limit: RateLimit,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, Hash)]
@@ -30,6 +32,7 @@ pub struct Config {
     /// API 接口路径前缀
     pub api_base: String,
     /// 限速策略（采用 RCGA 算法）
+    #[serde(default)]
     pub rate_limit: RateLimitConfig,
 }
 
@@ -43,7 +46,7 @@ impl Default for RateLimit {
     }
 }
 
-/// 将 u64 转换为 Duration 类型
+/// serde 实现：将 u64 转换为 Duration
 mod millis_format {
     use std::time::Duration;
 

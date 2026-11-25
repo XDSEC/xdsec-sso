@@ -1,0 +1,17 @@
+[database]
+dbtype = "postgres"
+host = "example.com"
+port = 5432
+user = "xdsec-sso"
+password = "P45SW0RD_1N_D3VEL0PMENT"
+database = "testdb"
+
+[server]
+host = "account.example.com"
+port = 80
+api_base = "/api"
+
+[server.rate_limit] # 不设置即采用默认值（不限速）
+query_limit = { burst_limit = 16, burst_recover_time = 500 }
+blocking_limit = { burst_limit = 5, burst_recover_time = 2000 }
+
