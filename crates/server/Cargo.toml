@@ -9,8 +9,12 @@ version.workspace      = true
 license.workspace      = true
 
 [dependencies]
-clap  = { workspace = true }
-time  = { workspace = true }
-tokio = { workspace = true }
+anyhow.workspace = true
+axum.workspace = true
+clap.workspace = true
+time.workspace   = true
+tokio.workspace  = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 
-sso-config = { workspace = true }
+sso-config.workspace = true
