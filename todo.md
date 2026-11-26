@@ -28,7 +28,7 @@
 ## 前端 P0 · 工程底座与核心认证流
 
 - [x] 初始化 `web/` 前端工程底座（Vite + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Biome + Vitest）与 Agent 规范文档。
-- [ ] 搭建前端基础管道：对齐 `api_v1.md` 定义全局 TS 类型、统一 `fetch` 客户端（内存 `X-CSRF-Token`、RFC 9457 错误解析、`429 Retry-After`、Sudo 拦截钩子）、`returnTo` 同源校验函数（附单测）及 MSW 本地 Mock 桩。 [基础约定](api_v1.md#1-基础约定) · [登录回跳](api_v1.md#63-登录回跳参数约定returnto)
+- [x] 搭建前端基础管道：对齐 `api_v1.md` 定义全局 TS 类型、统一 `fetch` 客户端（内存 `X-CSRF-Token`、RFC 9457 错误解析、`429 Retry-After`、Sudo 拦截钩子）、`returnTo` 同源校验函数（附单测）及 MSW 本地 Mock 桩。 [基础约定](api_v1.md#1-基础约定) · [登录回跳](api_v1.md#63-登录回跳参数约定returnto)
 - [ ] 实现登录与 MFA 二步验证页（`/login`）：支持密码登录、TOTP/恢复码校验、老成员未绑 MFA 提示框，以及验证通过后 `window.location.assign(returnTo)` 整页回跳。 [登录与会话接口](api_v1.md#31-登录与会话接口)
 - [ ] 实现新成员三步激活页（`/activate`）：串联设初始密码、本地渲染 `otpauthUri` 扫码绑 TOTP、展示一次性恢复码（复制/下载 `.txt` + 强制勾选已保存闭环）。 [激活规则](api_v1.md#41-激活找回密码和恢复码规则)
 - [ ] 实现忘记密码与重置密码页（`/forgot-password`、`/reset-password`），确保邮件落地页加载时不预消费 Token。 [忘记与重置密码](api_v1.md#忘记密码与重置密码reset-passwordtokenrst_)
