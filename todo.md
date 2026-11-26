@@ -1,6 +1,6 @@
 # XDSEC SSO 开发待办
 
-以 [API v1](api_v1.md) 为准。先跑通新版后端并在测试环境验收周报和 Flarum，全部确认无误后再统一迁移上线。前端部分待构思好后再补。
+以 [API v1](api_v1.md) 为准。先跑通新版后端并在测试环境验收周报和 Flarum，全部确认无误后再统一迁移上线；前端基于 MSW Mock 先行独立推进，待后端就绪后逐项联调。
 
 ## P0 · 跑通后端核心能力
 
@@ -25,7 +25,21 @@
 - [ ] 在测试环境用脱敏数据演练全量导入、重复导入和回滚预案。 [切换前](api_v1.md#切换前测试环境先练一遍)
 - [ ] 备份旧数据并停写，正式导入后统一切换周报与论坛入口，抽测无误再放开访问。 [切换当天](api_v1.md#切换当天正式上线)
 
+## 前端 P0 · 工程底座与核心认证流
+
+- [x] 初始化 `web/` 前端工程底座（Vite + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui + Biome + Vitest）与 Agent 规范文档。
+- [ ] 搭建前端基础管道：对齐 `api_v1.md` 定义全局 TS 类型、统一 `fetch` 客户端（内存 `X-CSRF-Token`、RFC 9457 错误解析、`429 Retry-After`、Sudo 拦截钩子）、`returnTo` 同源校验函数（附单测）及 MSW 本地 Mock 桩。 [基础约定](api_v1.md#1-基础约定) · [登录回跳](api_v1.md#63-登录回跳参数约定returnto)
+- [ ] 实现登录与 MFA 二步验证页（`/login`）：支持密码登录、TOTP/恢复码校验、老成员未绑 MFA 提示框，以及验证通过后 `window.location.assign(returnTo)` 整页回跳。 [登录与会话接口](api_v1.md#31-登录与会话接口)
+- [ ] 实现新成员三步激活页（`/activate`）：串联设初始密码、本地渲染 `otpauthUri` 扫码绑 TOTP、展示一次性恢复码（复制/下载 `.txt` + 强制勾选已保存闭环）。 [激活规则](api_v1.md#41-激活找回密码和恢复码规则)
+- [ ] 实现忘记密码与重置密码页（`/forgot-password`、`/reset-password`），确保邮件落地页加载时不预消费 Token。 [忘记与重置密码](api_v1.md#忘记密码与重置密码reset-passwordtokenrst_)
+
+## 前端 P1 · 个人中心、Sudo 弹窗与管理后台
+
+- [ ] 实现全局 Sudo 5 分钟验证弹窗：拦截 `403 reauthentication_required` 自动唤起 TOTP/恢复码重认证，通过后衔接原操作；处理 `403 mfa_required` 引导补绑。 [Sudo 模式](api_v1.md#32-敏感操作验证sudo-模式)
+- [ ] 实现个人中心（`/settings`）：支持修改昵称、改密后重登、TOTP 首次补绑（验当前密码）/ 覆盖换绑（走 Sudo）与重刷恢复码，禁止解绑最后一个 MFA。 [个人中心与 MFA](api_v1.md#42-个人中心与-mfa-管理接口)
+- [ ] 实现管理员后台（`/admin/users`）：支持用户分页筛选与关键词搜索、新建待激活账号，以及封禁/解封/重置他人 MFA（接入 Sudo 验证）。 [管理员接口](api_v1.md#5-管理员接口)
+- [ ] 关闭 MSW Mock 与后端测试环境实测联调，完成 Cookie、CSRF、Sudo 与下游系统 `returnTo` 回跳全链路验收。
+
 ## 后续迭代
 
-- [ ] 前端页面构思完成后补齐前端开发待办。
 - [ ] 后续版本再加 Passkey、改邮箱、换头像、注销账号与管理端批量导入。
