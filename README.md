@@ -13,11 +13,13 @@ xdsec-sso
     crates/          # 后端
     deploy/          # 部署
     web/             # 前端
-    api.md           # API 文档
+    AGENTS.md        # AI Agent 协作规范
+    api_v1.md        # API v1 接口文档
     Cargo.toml
     CONTRIBUTING.md
     LICENSE
     README.md
+    todo.md
 ```
 
 ## 技术栈
@@ -34,7 +36,12 @@ xdsec-sso
 
 ### 前端
 
-暂无......
+|项目|解决方案|
+|-|-|
+|语言|[TypeScript](https://www.typescriptlang.org/)|
+|核心框架|[React 19](https://react.dev/) + [Vite](https://vite.dev/) + [React Router](https://reactrouter.com/) + [TanStack Query](https://tanstack.com/query)|
+|样式与组件|[Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)|
+|代码规范与测试|[Biome](https://biomejs.dev/) + [Vitest](https://vitest.dev/) + [MSW](https://mswjs.io/)|
 
 ## 架构图
 

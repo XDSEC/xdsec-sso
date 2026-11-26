@@ -1,1 +1,13 @@
+# Rust
 target/
+
+# Frontend / Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment & Editor
+.env.local
+.env.*.local
+.DS_Store
