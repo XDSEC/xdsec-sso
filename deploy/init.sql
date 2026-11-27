@@ -4,7 +4,7 @@ CREATE TABLE "users" (
     "email" VARCHAR(127) NOT NULL,
     "nickname" VARCHAR(63) NOT NULL,
     "password" TEXT NOT NULL,
-    "totpSecret" CHAR(31) NULL,
+    "totpSecret" VARCHAR(31) NULL,
     "banned" BOOLEAN DEFAULT false,
     "admin" BOOLEAN DEFAULT false,
     PRIMARY KEY ("uid")
@@ -12,6 +12,7 @@ CREATE TABLE "users" (
 
 CREATE TABLE "user_passkeys" (
     "id" SERIAL NOT NULL,
+    "name" VARCHAR(63) NOT NULL,
     "uid" UUID NOT NULL,
     "passkeySecret" TEXT NOT NULL,
     PRIMARY KEY ("id"),

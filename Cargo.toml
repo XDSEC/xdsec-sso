@@ -14,15 +14,17 @@ license      = "AGPL-3.0-or-later"
 
 [workspace.dependencies]
 anyhow             = "1.0"
-axum               = "0.8"
+axum               = { version = "0.8", features = ["http2"] }
 clap               = { version = "4.6", features = ["derive"] }
 sea-orm            = { version = "2.0", features = ["sqlx-all", "runtime-tokio-native-tls"] }
 serde              = { version = "1.0", features = ["derive"] }
 serde_json         = "1.0"
+shellexpand        = "3.1"
 thiserror          = "2.0"
-time               = { version = "0.3", features = ["formatting", "serde", "local-offset"] }
+time               = { version = "0.3", features = ["formatting", "serde", "local-offset", "macros"] }
 tokio              = { version = "1.54", features = ["full"] }
 toml               = "1.2"
+tower              = "0.5"
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["local-time"] }
 urlencoding        = "2.1"

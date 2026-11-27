@@ -9,12 +9,14 @@
 ## 1. 基础约定
 
 ### 1.1 部署与存储
+
 - **前后端同域名**：页面和后端接口都挂在 `https://account.xdsec.org` 下。
 - **复用现有 MySQL + 保留轻量 Redis**：后端通过 SeaORM 兼容 MySQL / PostgreSQL / SQLite（线下开发可用 Docker 跑 PG，线上直接连服务器现成的 **MySQL** 新建独立库，不再单独起 PostgreSQL 容器）；同时保留轻量 **Redis** 统一管理所有带过期时间（TTL）的会话和临时凭据（部署时配置 `maxmemory` 内存上限兜底）。
   - **存数据库（MySQL）**：用户资料、密码哈希、MFA 密钥与恢复码、改密/激活链接 Token、管理员操作日志。
   - **存 Redis（TTL 自动过期）**：普通登录 Session、5 分钟 Sudo 状态、短时 MFA 登录挑战、新成员激活挑战与待确认 TOTP 密钥、OIDC 授权码、接口限流计数（按用户维护会话索引，支持改密/封禁时一键清空全部设备会话）。
 
 ### 1.2 请求和返回格式
+
 - 请求和返回都用 JSON（`application/json`），字段名统一用小驼峰（`camelCase`）。
 - 所有时间统一用 UTC RFC 3339 字符串（比如 `2026-11-26T08:00:00Z`）。
 - 用户 `id` 是后端生成的 UUID，创建后永不变动。
@@ -26,6 +28,7 @@
   - `204`：操作成功，没有返回体。
 
 ### 1.3 报错格式
+
 接口报错统一返回 `application/problem+json`（[RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html)），前端直接拿 `code` 做分支判断和中文提示：
 
 ```json
@@ -58,6 +61,7 @@
 ## 2. 用户数据与登录态安全
 
 ### 2.1 用户对象（`User`）
+
 本系统**不开放自行注册**，账号只能由管理员新建或从老系统导入。用户名和邮箱在存库前统一去空格、转小写，并保证全站唯一。
 
 ```json
@@ -83,6 +87,7 @@
 - 密码用 **Argon2id** 存完整 PHC 哈希串；密码哈希、TOTP 密钥、恢复码这些机密字段只在后端保存，绝不发给前端。
 
 ### 2.2 Cookie、CSRF 和限流
+
 - **Session Cookie**：只有 `status === "active"` 的正常账号才能获得登录会话；登录或完成激活后，后端生成一个随机字符串作为 Session ID，放进 Cookie `__Host-sso_session`，属性固定为 `Secure; HttpOnly; SameSite=Lax; Path=/`。
 - **什么时候会踢下线**：
   - 会话有“长时间不动自动过期”和“最长有效期”两道限制；每次重新登录都会换全新的 Session ID。
@@ -107,6 +112,7 @@
 | `POST /auth/logout` | 退出当前登录并清掉 Cookie |
 
 #### `POST /auth/login`
+
 - 请求体：
   ```json
   {
@@ -133,6 +139,7 @@
   `challengeId` 几分钟过期、输错太多次也会作废。前端放内存里就行，验过一次马上销毁。
 
 #### `POST /auth/login/mfa`
+
 - 请求体：
   ```json
   {
@@ -150,6 +157,7 @@
   ```
 
 #### `GET /session`
+
 - 直接带 Cookie 调；没登录或过期返回 `401 (authentication_required)`。
 - 返回 `200`：
   ```json
@@ -163,6 +171,7 @@
   `sudoExpiresAt` 是 Sudo 模式的到期时间；没开启或已过期就是 `null`。
 
 #### `POST /auth/logout`
+
 - 需要登录 Cookie + `X-CSRF-Token`。
 - 返回 `204`，删掉服务端当前会话并清掉 Cookie。
 
@@ -185,6 +194,7 @@
 5. **登录后提醒绑 MFA**：老成员登录成功后，如果前端发现 `user.mfaMethods` 是空的，先弹一个“建议开启 MFA”的提示框，让用户选“现在去配”或者直接关掉弹窗。
 
 #### `POST /auth/sudo`（用 TOTP 或恢复码进入 Sudo）
+
 - 需要登录 Cookie + `X-CSRF-Token`。
 - 请求体：
   ```json
@@ -225,12 +235,14 @@
 ### 4.1 激活、找回密码和恢复码规则
 
 #### 邮件落地 URL 与 Token 隔离
+
 - 邮件里的前端落地 URL 区分为两类（URL 和请求体中均只需传 `token`，无需额外传类型字段；后端在数据库内区分“首次激活 Token”与“重置密码 Token”，跨接口混用、过期或已消费一律返回 `400 invalid_challenge`）：
   - **首次激活**：`https://account.xdsec.org/activate?token=act_...`（由管理员建号 `POST /admin/users` 触发，或待激活账号调找回接口重发）。
   - **找回密码**：`https://account.xdsec.org/reset-password?token=rst_...`（仅面向已激活的 `active` 账号）。
 - **防邮件客户端预加载**：用户点击邮件链接仅打开前端对应路由页面，后端不提供消耗型 GET 校验，只有在真正提交表单时才消费 Token。
 
 #### 新老成员的 MFA 与恢复码策略
+
 - **新成员（`pendingActivation`）**：必须走完 **“第 1 步设初始密码 → 第 2 步绑首个 MFA（首期为 TOTP，后续可扩展 Passkey）→ 第 3 步勾选已保存恢复码”**，账号才会变成 `active`，保证新成员 100% 开启 MFA。
 - **迁移过来的老成员（`active`）**：不卡正常登录看周报和论坛，靠登录后的弹窗提示 + 做敏感操作时返回 `403 (mfa_required)` 引导尽快补绑。
 - **单 TOTP 与禁止降级规则**：每个账号最多保留 `1` 个生效的 TOTP 密钥；一旦账号开启了 MFA（无论新成员还是已补绑的老成员），**严禁用户自行删光最后一个 MFA 退回纯密码状态**（换手机走 `setup -> verify` 覆盖换绑；手机与恢复码全丢时仅限管理员调后台重置接口兜底）。
@@ -240,6 +252,7 @@
   - 以后再加第 2 个、第 3 个 MFA（比如绑了 TOTP 又加了个 Passkey）时不重发恢复码（对应字段返回 `null`）；用户随时可以去个人中心过一遍 Sudo 手动重刷一批新的（旧的立刻作废）。
 
 #### 新成员三步激活状态机与凭据传递（`/activate?token=act_...`）
+
 为避免签发“半激活受限 Session”污染全局鉴权、OIDC 授权和同浏览器已有登录态，新成员激活采用与登录 MFA 一致的 **Redis 短时激活挑战凭据（`activationToken`）** 串联三步：
 
 1. **第 1 步：设初始密码（`POST /auth/activations/password`）**
@@ -300,6 +313,7 @@
    - **异常关闭兜底**：由于第 2b 步验过动态码后账号已在服务端原子切为 `active`，即便用户在第 3 步未点按钮就直接关闭浏览器，手机验证器里的动态码和刚设的密码也已成对生效，不会出现“手机已绑码但账号仍未激活”的死锁；后续正常登录后可在个人中心重刷恢复码。
 
 #### 忘记密码与重置密码（`/reset-password?token=rst_...`）
+
 - **`POST /auth/password-reset-requests`**
   - 请求体：`{ "email": "user@example.com" }`
   - 无论邮箱是否存在或处于何种状态，接口统一返回 `202` 和 `{ "status": "accepted" }`（防枚举账号）。
@@ -318,11 +332,13 @@
 ### 4.2 个人中心与 MFA 管理接口
 
 #### 基础资料与改密
+
 - **`GET /me`**：返回 `200` 和当前用户的 `User` 对象。
 - **`PATCH /me`**：需要 `X-CSRF-Token`，传 `{ "nickname": "新昵称" }`，返回 `200` 和改完后的 `User` 对象。
 - **`POST /me/password-changes`**（需 Sudo）：需要 `X-CSRF-Token`，传 `{ "newPassword": "new-strong-password" }`，返回 `204`，同时踢掉所有设备的旧会话，前端跳去重新登录。
 
 #### `POST /me/mfa/totp/setup`（发起 TOTP 绑定或换绑）
+
 - 需要登录 Cookie + `X-CSRF-Token`。一个账号最多保留 `1` 个生效的 TOTP 密钥；已绑定 TOTP 的用户更换手机或验证器 App 时**无需先解绑**，直接重新走 `setup -> verify` 覆盖换绑即可。
 - **身份核验按 §3.2 区分名下是否已有 MFA**：
   - **名下尚无任何 MFA（`mfaMethods` 为空 `[]`，如迁移老成员首次补绑）**：不走 Sudo，也不顺手签发 5 分钟 Sudo 窗口，请求体必须传入当前密码当场核验（缺字段返 `400 invalid_request`，密码错返 `401 invalid_credentials`）：
@@ -341,6 +357,7 @@
   ```
 
 #### `POST /me/mfa/totp/verify`（确认绑定或覆盖换绑 TOTP）
+
 - 需要登录 Cookie + `X-CSRF-Token`（直接消费当前会话在 `setup` 阶段暂存的待确认密钥，无需重复传密码或再验 Sudo）。
 - 请求体：
   ```json
@@ -365,11 +382,13 @@
     - 以上两种情况均保留原有恢复码不变，不重发恢复码，固定返回 `{ "recoveryCodes": null }`。
 
 #### `DELETE /me/mfa/totp`（解绑 TOTP，需 Sudo）
+
 - 需要登录 Cookie + `X-CSRF-Token` + **Sudo**（名下无任何 MFA 时由 `require_sudo` 直接返 `403 mfa_required`；未绑定 TOTP 时返 `409 invalid_user_state`）。
 - **严禁删光最后一个 MFA**：若当前账号名下仅剩 `"totp"` 这唯一一种 MFA 方式（`mfaMethods` 长度为 `1`，首版未接入 Passkey 前均属此类），直接返回 `409 (invalid_user_state)` 拒绝解绑，防止账号退回无 MFA 状态（更换设备请走上面的 `setup -> verify` 覆盖换绑）。
 - 仅当账号同时绑有其他 MFA（如后续版本同时绑了 `Passkey + TOTP`，`mfaMethods` 长度 `> 1`）时，才允许删除 TOTP 密钥并返回 `204`（原有恢复码继续保留）。
 
 #### `POST /me/mfa/recovery-codes`（重刷恢复码，需 Sudo）
+
 - 需要登录 Cookie + `X-CSRF-Token` + **Sudo**（名下无任何 MFA 时由 `require_sudo` 直接返 `403 mfa_required`）。
 - 请求体：`{}`。
 - 在同一个数据库事务中作废全部旧恢复码并生成一整套新恢复码（库内仅存哈希），返回 `200`（明文仅此次返回一次）：
@@ -401,6 +420,7 @@
 ### 5.1 接口详情
 
 #### `GET /admin/users`（常规页码分页）
+
 - Query 参数：
   - `page`：第几页，默认 `1`。
   - `pageSize`：每页几条，默认 `20`，最多 `100`。
@@ -417,21 +437,26 @@
   ```
 
 #### `POST /admin/users`
+
 - 请求体：`{ "username": "xiaoming", "email": "user@example.com", "nickname": "小明" }`
 - 返回 `201` 和新建的 `User` 对象（`status` 为 `pendingActivation`、`emailVerified` 为 `false`），后台发首次激活邮件（前端落地 `/activate?token=act_...`）。重名或邮箱重复返回 `409 (user_conflict)`。
 
 #### `PUT /admin/users/{id}/suspension`（需 Sudo）
+
 - 请求体：`{ "reason": "封禁原因" }`
 - 返回 `204`，把账号设为 `suspended`，并立刻踢掉该用户在所有设备上的会话。
 
 #### `DELETE /admin/users/{id}/suspension`（需 Sudo）
+
 - 返回 `204`，把账号恢复成封禁前的状态。
 
 #### `DELETE /admin/users/{id}/mfa`（需 Sudo）
+
 - 请求体（可选）：`{ "reason": "换手机且恢复码丢失，已核实本人" }`
 - 返回 `204`。清空该用户的所有 MFA（TOTP / Passkey）和恢复码，并踢掉其全部现有会话；对方重新登录后可以重走首次绑定 MFA。
 
 ### 5.2 操作日志（审计）
+
 建号、封号、解封、重置 MFA 这些管理操作都要记日志，写清楚：**谁操作的（操作者 ID）、操作了谁（目标 ID）、做了什么操作、是否成功、操作时间**。密码、Token、TOTP 密钥这类敏感信息绝对不能打进日志。
 
 ---
@@ -439,6 +464,7 @@
 ## 6. 应用接入与老系统兼容
 
 ### 6.1 新应用怎么接（OIDC）
+
 以后新写的应用，统一走标准 **OIDC Authorization Code + PKCE（`S256`）**：
 - **不用另起第三方 OIDC 服务**：直接由 `xdsec-sso` 自己实现核心的几个 OIDC 接口（发现文档 `/.well-known/openid-configuration`、`/authorize`、`/token`、`/userinfo` 和 JWKS）。
 - 每个接入方在 SSO 里登记自己的 `client_id`、精确匹配的 `redirect_uri` 和允许拿的 `scopes`。
@@ -480,12 +506,14 @@
 新系统在测试环境验证没问题后，选一个空闲时间统一把老系统切过来，分两步走：
 
 ### 切换前（测试环境先练一遍）
+
 1. **核对老账号**：整理旧系统（Kratos、周报、Flarum）的用户数据，把老账号和新 SSO 的 UUID 一一对应好。遇到重名或邮箱冲突的，提前人工确认。
 2. **演练导入和回滚**：用脱敏数据在测试环境跑一遍导入脚本，测试重复导入会不会出错，也演练一遍出问题后怎么退回老系统。
 3. **检查历史数据**：在测试环境核对用户总数、管理员权限，确认历史周报和论坛帖子都还挂在正确的人名下；明确哪些旧密码能直接迁、哪些需要发邮件重设。
 4. **上线条件**：所有要迁的应用在测试环境都验收通过，没有未处理的账号冲突，导入和回滚都演练成功。
 
 ### 切换当天（正式上线）
+
 1. **先备份、停写入**：备份旧用户数据和各应用的认证配置，暂时冻结旧系统的账号修改，避免导入中途产生漏掉的新数据。
 2. **正式导入并切入口**：导入最终数据并核对人数、权限和封禁状态，在同一时间把周报和论坛的登录入口切到新 SSO，并让旧登录态失效。
 3. **抽测没问题再放开**：开放正常访问前，先抽几个老账号测一遍登录、权限、历史周报和历史帖子。

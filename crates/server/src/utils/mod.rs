@@ -2,6 +2,4 @@
 
 pub mod rate_limit;
 
-pub mod prelude {
-    pub use super::rate_limit::RateLimit;
-}
+pub mod prelude {}

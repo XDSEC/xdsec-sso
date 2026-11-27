@@ -17,9 +17,8 @@
 use std::{fs, io::Read, path::Path};
 
 use serde::{Deserialize, Serialize};
+use shellexpand;
 use thiserror::Error;
-
-use crate::database::Config;
 
 pub mod database;
 pub mod server;
@@ -43,6 +42,8 @@ pub enum ConfigError {
     Parse(#[from] toml::de::Error),
     #[error("未在加载路径中找到配置文件")]
     NoneFound,
+    #[error("不支持非 UTF-8 格式路径")]
+    NonUTF8Path,
 }
 
 /// 总配置
@@ -58,7 +59,12 @@ impl GlobalConfig {
 
     /// 从路径加载配置
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
-        let mut f = fs::OpenOptions::new().read(true).open(path.as_ref())?;
+        let mut f = fs::OpenOptions::new()
+            .read(true)
+            .open(std::fs::canonicalize(
+                shellexpand::tilde(&path.as_ref().to_str().ok_or(ConfigError::NonUTF8Path)?)
+                    .as_ref(),
+            )?)?;
         let mut buf = String::new();
         f.read_to_string(&mut buf)?;
         Self::from_str(&buf)
@@ -68,8 +74,7 @@ impl GlobalConfig {
     pub fn load() -> Result<Self, ConfigError> {
         LOAD_PATH
             .iter()
-            .flat_map(|p| Self::from_file(p).ok())
-            .next()
+            .find_map(|path| Self::from_file(path).ok())
             .ok_or(ConfigError::NoneFound)
     }
 }

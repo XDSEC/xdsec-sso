@@ -30,9 +30,7 @@ xdsec-sso
 |-|-|
 |语言|[Rust](https://rust-lang.org/zh-CN/)|
 |核心框架|[tokio](https://tokio.rs/) + [axum](https://axumrust.com/) + [sea-orm](https://www.sea-ql.org/SeaORM/) + [tracing](https://tracing.rs/)|
-|关系型数据库|[PostgreSQL](https://www.postgresql.org/)|
 |缓存数据库|[Redis](https://redis.io/)|
-|虚拟化|[Docker](https://www.docker.com/)|
 
 ### 前端
 
