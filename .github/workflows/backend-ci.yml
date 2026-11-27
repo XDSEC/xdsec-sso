@@ -1,0 +1,48 @@
+name: Web CI
+
+on:
+  push:
+    branches:
+      - dev/backend
+      - develop
+      - main
+    paths:
+      - "crates/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - "crates/**"
+      - ".github/workflows/backend-ci.yml"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-debug:
+    name: Check, Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Check
+        run: cargo check
+      - name: Build
+        run: cargo build
+      - name: Perform unit tests
+        run: cargo test
+
+  build-release:
+    name: Check, Build & Test with release profile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Check
+        run: cargo check --release
+      - name: Build
+        run: cargo build --release
+      - name: Perform unit tests
+        run: cargo test --release
