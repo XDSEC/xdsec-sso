@@ -6,7 +6,7 @@ API 的具体实现在 [`/crates/server/src/api`](/crates/server/src/api/) 中�
 
 ## API v1
 
-基路径： `/api/v1`
+基路径： `/v1`
 
 |路径|方法|作用|
 |-|-|-|
