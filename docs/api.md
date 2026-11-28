@@ -19,4 +19,5 @@ API 的具体实现在 [`/crates/server/src/api`](/crates/server/src/api/) 中�
 |路径|方法|作用|
 |-|-|-|
 |/state|GET|以 JSON 格式打印服务器状态机|
+|/echo|GET|以 JSON 格式打印 query 内容|
 |/echo|POST|将请求体的内容原封不动地返回|

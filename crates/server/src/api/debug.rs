@@ -1,19 +1,25 @@
-use std::sync::Arc;
+use std::collections::HashMap;
 
 use axum::routing::{get, post};
 use axum::{Router, body::Bytes, extract::*};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
-use crate::server::SharedState;
+use crate::StateType;
 
 async fn post_echo(data: Bytes) -> Bytes { data }
 
-async fn get_state(State(state): State<Arc<SharedState>>) -> Json<Value> {
-    Json(serde_json::to_value(state.as_ref()).unwrap())
+async fn get_echo(Query(query): Query<HashMap<String, String>>) -> Json<Value> {
+    Json(Value::Object(Map::from_iter(
+        query.into_iter().map(|(k, v)| (k, Value::String(v))),
+    )))
 }
 
-pub fn router() -> Router<Arc<SharedState>> {
+async fn get_state(State(state): State<StateType>) -> Json<Value> {
+    Json(serde_json::to_value(state).unwrap())
+}
+
+pub fn router() -> Router<StateType> {
     Router::new()
         .route("/state", get(get_state))
-        .route("/echo", post(post_echo))
+        .route("/echo", post(post_echo).get(get_echo))
 }

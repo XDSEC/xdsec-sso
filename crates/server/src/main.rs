@@ -12,7 +12,11 @@ mod api;
 mod cli;
 mod logger;
 mod server;
+mod state;
 mod utils;
+
+pub use state::SharedState;
+pub type StateType = SharedState;
 
 /// 程序入口点
 fn main() -> ! {
@@ -38,7 +42,7 @@ fn main() -> ! {
         .build()
         .expect("无法创建异步运行时！");
 
-    match runtime.block_on(server::launch(&config.server)) {
+    match runtime.block_on(server::launch(&config)) {
         Ok(()) => exit(0),
         Err(e) => {
             error!("{}", e);

@@ -13,3 +13,4 @@ sea-orm.workspace = true
 tokio.workspace   = true
 
 sso-config.workspace = true
+thiserror.workspace = true
