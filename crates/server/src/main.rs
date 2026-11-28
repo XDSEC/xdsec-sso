@@ -8,6 +8,7 @@ use logger::*;
 use tokio;
 use tracing::*;
 
+mod api;
 mod cli;
 mod logger;
 mod server;

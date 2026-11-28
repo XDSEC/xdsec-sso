@@ -15,5 +15,12 @@ services:
     ports:
       - 7092:6379
     restart: always
+  sso-nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ../web:/var/www/xdsec-sso
+    network_mode: host
 volumes:
   xdsec-sso-db:

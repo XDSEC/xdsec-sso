@@ -1,18 +1,21 @@
-# 部署
+# 测试部署
 
-项目使用的 PostgreSQL 和 Redis 均采用 Docker 容器方式部署。
+## 环境部署
 
-项目本体在生产环境中直接在主机上运行。
+项目所需的其他环境均采用 docker 容器方式部署。端口使用情况如下：
 
-## 数据库部署
+|端口|服务|
+|-|-|
+|7091|PostgreSQL|
+|7092|Redis|
+|7097|Nginx|
 
 切换到本目录（`deploy`），编辑 `.env` 文件，修改必要字段后先 `source .env` 再使用 `docker-compose` 部署。
 
 ```bash
+source .env
 docker compose up -d
 ```
-
-PostgreSQL 会在 `7091` 端口开放，Redis 会在 `7092` 端口开放，前者的数据还会持久化保存在数据卷 `xdsec-sso-db` 中。
 
 其他常用操作：
 
@@ -28,3 +31,13 @@ docker compose down -v --rmi local --remove-orphans
 ```
 
 该命令将会停止已启动的服务，并且删除**容器、数据卷（`-v`）、本地构建的镜像（`--rmi local`）**。
+
+## 后端部署
+
+在项目根目录使用 `cargo` 构建并运行：
+
+```bash
+cargo run           # 运行 debug 配置
+cargo run --release # 运行 release 配置
+cargo run -- -v     # 可以通过 -- 来指定传递给服务端主程序的参数
+```
