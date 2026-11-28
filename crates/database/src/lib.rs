@@ -6,7 +6,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DatabaseError {
-    #[error("数据库错误")]
+    #[error("Database Error")]
     Database(#[from] DbErr),
 }
 

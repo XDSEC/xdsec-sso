@@ -36,13 +36,13 @@ pub const LOAD_PATH: [&str; 1] = [".\\config\\config.toml"];
 
 #[derive(Debug, Error)]
 pub enum ConfigError {
-    #[error("IO 错误")]
+    #[error("IO Error")]
     IO(#[from] std::io::Error),
-    #[error("格式解析出错")]
+    #[error("parse failure")]
     Parse(#[from] toml::de::Error),
-    #[error("未在加载路径中找到配置文件")]
+    #[error("none configuration file found")]
     NoneFound,
-    #[error("不支持非 UTF-8 格式路径")]
+    #[error("non utf-8 paths are not supported")]
     NonUTF8Path,
 }
 

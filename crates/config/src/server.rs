@@ -17,10 +17,10 @@ pub struct RateLimit {
 pub struct RateLimitConfig {
     /// 快速 API 的限速
     #[serde(default)]
-    query_limit: RateLimit,
+    pub query_limit: RateLimit,
     /// 耗时 API 的限速
     #[serde(default)]
-    blocking_limit: RateLimit,
+    pub blocking_limit: RateLimit,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq, Hash)]

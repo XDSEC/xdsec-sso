@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 use sso_config::server::RateLimit as RateLimitConf;
 
 /// 用于提供限速算法实现的类型
+#[derive(Clone, Copy)]
 pub struct RateLimit {
     tat: Instant,
     pub tolerance: Duration,
@@ -22,15 +23,20 @@ impl RateLimit {
         }
     }
 
-    /// 当前时刻是否应当处理连接
-    pub fn ready(&mut self) -> bool {
+    /// 至少要等待多久才能进行下一次连接
+    pub fn next(&mut self) -> Duration {
         let now = Instant::now();
         if now + self.tolerance < self.tat {
-            false
+            self.tat - now - self.tolerance
         } else {
             self.tat = now.max(self.tat) + self.recover_time;
-            true
+            Duration::ZERO
         }
+    }
+
+    /// 当前是否可处理下一次连接
+    pub fn ready(&mut self) -> bool {
+        self.next() == Duration::ZERO
     }
 }
 

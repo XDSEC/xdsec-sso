@@ -1,8 +1,9 @@
+//! 服务端跨线程共享状态机
+
 use axum::extract::FromRef;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 
-/// 服务端跨线程共享状态机
 #[derive(Debug, Serialize, Deserialize, FromRef, Clone)]
 pub struct SharedState {
     #[serde(skip)]
@@ -19,3 +20,5 @@ impl SharedState {
         }
     }
 }
+
+pub type StateType = SharedState;
